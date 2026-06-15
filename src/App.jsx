@@ -4,6 +4,11 @@ import PizZip from 'pizzip';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import * as XLSX from 'xlsx';
+import { motion, AnimatePresence } from 'motion/react';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
+import ReactConfetti from 'react-confetti';
+import { useWindowSize } from 'react-use';
+import logoTransparan from './assets/logo_transparan.png';
 import './App.css';
 
 // Simple Icon Components
@@ -34,6 +39,10 @@ function App() {
     Sebutan1: '', Auditor1: '', Sebutan2: '', Auditor2: '',
     Tanggal_Jatuh_Tempo: '', Nama_Direktur: '', Jabatan: ''
   });
+
+  const [bankListRef] = useAutoAnimate();
+  const [showConfetti, setShowConfetti] = useState(false);
+  const { width, height } = useWindowSize();
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -122,6 +131,8 @@ function App() {
             });
           }
           setHasGenerated(true);
+          setShowConfetti(true);
+          setTimeout(() => setShowConfetti(false), 5000);
         } catch (error) {
           console.error("Error Detail:", error);
           if (error.properties && error.properties.errors instanceof Array) {
@@ -146,19 +157,41 @@ function App() {
 
   return (
     <div className="app-wrapper">
+      {showConfetti && (
+        <ReactConfetti
+          width={width}
+          height={height}
+          recycle={false}
+          numberOfPieces={300}
+          colors={['#fda4af', '#fb7185', '#e11d48', '#9f1239', '#881337']}
+        />
+      )}
+
       {/* Header */}
       <header className="app-header">
-        <div className="app-header__logo">
-          <span className="app-header__logo-icon"><Icons.Document /></span>
-          <h1 className="app-header__title">Generator Konfirmasi Utang</h1>
-        </div>
-        <p className="app-header__subtitle">
-          Buat surat Konfirmasi Utang untuk audit dengan cepat dan mudah
-        </p>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, ease: 'easeOut' }}
+        >
+          <img src={logoTransparan} alt="Logo KAP" className="app-header__logo-img" />
+          <div className="app-header__kap-badge">
+            KAP Kuncara Budi Santosa &amp; Rekan
+          </div>
+          <h1 className="app-header__title">Generator Konfirmasi Bank</h1>
+          <p className="app-header__subtitle">
+            Alat bantu audit untuk membuat surat konfirmasi bank secara massal dan otomatis.
+          </p>
+        </motion.div>
       </header>
 
       {/* Main Card */}
-      <main className="app-card">
+      <motion.main
+        className="app-card"
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.2, ease: 'easeOut' }}
+      >
         {/* Progress Bar */}
         <div className="progress-bar">
           {[
@@ -178,369 +211,383 @@ function App() {
           ))}
         </div>
 
-        {!hasGenerated ? (
-          <>
-            {/* Step 1: Template */}
-            <section className="section">
-              <div className="section__header">
-                <span className="section__number">1</span>
-                <h3 className="section__title">Upload Template</h3>
-              </div>
-              <p className="section__description">
-                Pilih file template Word yang akan digunakan
-              </p>
+        <AnimatePresence mode="wait">
+          {!hasGenerated ? (
+            <motion.div key="form" exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }}>
 
-              <div className="file-upload mt-3">
-                <label className="file-upload__area">
-                  <input
-                    type="file"
-                    accept=".docx"
-                    className="file-upload__input"
-                    onChange={(e) => {
-                      setTemplateFile(e.target.files[0]);
-                      setActiveStep(2);
-                      if (errors.templateFile) setErrors((prev) => { const n = { ...prev }; delete n.templateFile; return n; });
-                    }}
-                  />
-                  <div className="file-upload__icon"><Icons.Upload /></div>
-                  <p className="file-upload__text">
-                    <strong>Pilih file</strong> atau drag & drop di sini
-                  </p>
-                  <p className="form-hint mt-2">Format: .docx • Maks 10MB</p>
-                </label>
-
-                {templateFile && (
-                  <div className="file-upload__preview">
-                    <span className="file-upload__preview-icon"><Icons.File /></span>
-                    <span>{templateFile.name}</span>
-                  </div>
-                )}
-                {errors.templateFile && <p className="form-error-msg">⚠ {errors.templateFile}</p>}
-              </div>
-
-              <div className="mt-3">
-                <a
-                  href="/bahan/Konfirmasi-Utang-Template.docx"
-                  download
-                  className="btn btn--outline btn--full"
-                >
-                  <Icons.Download /> Download Template Standar
-                </a>
-              </div>
-            </section>
-
-            {/* Step 2: Detail Audit */}
-            <section className="section">
-              <div className="section__header">
-                <span className="section__number">2</span>
-                <h3 className="section__title">Detail Audit</h3>
-              </div>
-              <p className="section__description">
-                Lengkapi informasi yang akan muncul di semua surat
-              </p>
-
-              <div className="form-grid mt-3">
-                <div className="form-group">
-                  <label className="form-label">Kota <span className="form-label__required">*</span></label>
-                  <input
-                    name="Kota"
-                    className={`form-input${errors.Kota ? ' form-input--error' : ''}`}
-                    placeholder="Samarinda"
-                    onChange={handleInputChange}
-                    value={formData.Kota}
-                  />
-                  {errors.Kota && <p className="form-error-msg">⚠ {errors.Kota}</p>}
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Tanggal Surat <span className="form-label__required">*</span></label>
-                  <input
-                    name="Tanggal_Konfirmasi"
-                    type="date"
-                    className={`form-input${errors.Tanggal_Konfirmasi ? ' form-input--error' : ''}`}
-                    onChange={handleInputChange}
-                    value={formData.Tanggal_Konfirmasi}
-                  />
-                  {errors.Tanggal_Konfirmasi && <p className="form-error-msg">⚠ {errors.Tanggal_Konfirmasi}</p>}
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Periode Audit</label>
-                  <input
-                    name="Periode"
-                    className="form-input"
-                    placeholder="31 Desember 2023"
-                    onChange={handleInputChange}
-                    value={formData.Periode}
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Nama Klien <span className="form-label__required">*</span></label>
-                  <input
-                    name="Nama_Klien"
-                    className={`form-input${errors.Nama_Klien ? ' form-input--error' : ''}`}
-                    placeholder="PT Contoh Abadi"
-                    onChange={handleInputChange}
-                    value={formData.Nama_Klien}
-                  />
-                  {errors.Nama_Klien && <p className="form-error-msg">⚠ {errors.Nama_Klien}</p>}
-                </div>
-
-                <div className="form-row">
-                  <div className="form-row__item form-row__item--small">
-                    <label className="form-label">Sebutan</label>
-                    <input
-                      name="Sebutan1"
-                      className="form-input"
-                      placeholder="Bpk"
-                      onChange={handleInputChange}
-                      value={formData.Sebutan1}
-                    />
-                  </div>
-                  <div className="form-row__item form-row__item--large">
-                    <label className="form-label">Auditor 1</label>
-                    <input
-                      name="Auditor1"
-                      className="form-input"
-                      placeholder="Nama lengkap"
-                      onChange={handleInputChange}
-                      value={formData.Auditor1}
-                    />
+              {/* Step 1: Template */}
+              <motion.section
+                className="section"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.1 }}
+              >
+                <div className="section__header">
+                  <span className="section__number">1</span>
+                  <div>
+                    <h3 className="section__title">Upload Template</h3>
+                    <p className="section__description">Pilih file template Word yang akan digunakan</p>
                   </div>
                 </div>
 
-                <div className="form-row">
-                  <div className="form-row__item form-row__item--small">
-                    <label className="form-label">Sebutan</label>
-                    <input
-                      name="Sebutan2"
-                      className="form-input"
-                      placeholder="Ibu"
-                      onChange={handleInputChange}
-                      value={formData.Sebutan2}
-                    />
-                  </div>
-                  <div className="form-row__item form-row__item--large">
-                    <label className="form-label">Auditor 2</label>
-                    <input
-                      name="Auditor2"
-                      className="form-input"
-                      placeholder="Nama lengkap"
-                      onChange={handleInputChange}
-                      value={formData.Auditor2}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Batas Waktu Respon</label>
-                  <input
-                    name="Tanggal_Jatuh_Tempo"
-                    type="date"
-                    className="form-input"
-                    onChange={handleInputChange}
-                    value={formData.Tanggal_Jatuh_Tempo}
-                  />
-                </div>
-
-                <div className="form-row">
-                  <div className="form-row__item">
-                    <label className="form-label">Nama Direktur <span className="form-label__required">*</span></label>
-                    <input
-                      name="Nama_Direktur"
-                      className={`form-input${errors.Nama_Direktur ? ' form-input--error' : ''}`}
-                      placeholder="Nama penanda tangan"
-                      onChange={handleInputChange}
-                      value={formData.Nama_Direktur}
-                    />
-                    {errors.Nama_Direktur && <p className="form-error-msg">⚠ {errors.Nama_Direktur}</p>}
-                  </div>
-                  <div className="form-row__item" style={{maxWidth: '180px'}}>
-                    <label className="form-label">Jabatan</label>
-                    <input
-                      name="Jabatan"
-                      className="form-input"
-                      placeholder="Direktur"
-                      onChange={handleInputChange}
-                      value={formData.Jabatan}
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* Step 3: Daftar Penerima */}
-            <section className="section">
-              <div className="section__header">
-                <span className="section__number">3</span>
-                <h3 className="section__title">Daftar Penerima</h3>
-              </div>
-              <p className="section__description">
-                Tambahkan nama penerima konfirmasi (minimal 1)
-              </p>
-
-              <div className="mt-3">
-                <label className="form-label mb-2">Import dari Excel</label>
-                <div className="file-upload">
-                  <label className="file-upload__area">
+                <div className="file-upload mt-3">
+                  <motion.label
+                    className="file-upload__area"
+                    whileHover={{ scale: 1.01 }}
+                    whileTap={{ scale: 0.99 }}
+                  >
                     <input
                       type="file"
-                      accept=".xlsx, .xls"
+                      accept=".docx"
                       className="file-upload__input"
-                      onChange={handleExcelUpload}
+                      onChange={(e) => {
+                        setTemplateFile(e.target.files[0]);
+                        setActiveStep(2);
+                        if (errors.templateFile) setErrors((prev) => { const n = { ...prev }; delete n.templateFile; return n; });
+                      }}
                     />
-                    <div className="file-upload__icon"><Icons.Users /></div>
+                    <div className="file-upload__icon">📤</div>
                     <p className="file-upload__text">
-                      <strong>Upload Excel</strong> dengan kolom "Nama"
+                      <strong>Pilih file</strong> atau drag &amp; drop di sini
                     </p>
-                    <p className="form-hint mt-2">Format: .xlsx atau .xls</p>
-                  </label>
-                  {excelNames.length > 0 && (
+                    <p className="file-upload__hint">Format: .docx • Maks 10MB</p>
+                  </motion.label>
+
+                  {templateFile && (
                     <div className="file-upload__preview">
-                      <Icons.Check /> {excelNames.length} nama berhasil diimport
+                      <span>📁</span>
+                      <span>{templateFile.name}</span>
                     </div>
                   )}
+                  {errors.templateFile && <p className="form-error-msg">⚠ {errors.templateFile}</p>}
                 </div>
-              </div>
 
-              <div className="divider" />
+                <div className="mt-3">
+                  <a
+                    href="/bahan/Konfirmasi-Utang-Template.docx"
+                    download
+                    className="btn btn--outline"
+                  >
+                    <Icons.Download /> Download Template Standar
+                  </a>
+                </div>
+              </motion.section>
 
-              <div>
-                <label className="form-label mb-2">Input Manual</label>
-                <textarea
-                  className={`form-textarea${errors.penerima && excelNames.length === 0 ? ' form-textarea--error' : ''}`}
-                  placeholder="PT Maju Bersama&#10;CV Sejahtera Abadi&#10;Toko Berkah Jaya"
-                  value={manualNames}
-                  onChange={(e) => {
-                    setManualNames(e.target.value);
-                    setActiveStep(3);
-                    if (errors.penerima) setErrors((prev) => { const n = { ...prev }; delete n.penerima; return n; });
-                  }}
-                />
-                {errors.penerima
-                  ? <p className="form-error-msg">⚠ {errors.penerima}</p>
-                  : <p className="form-hint">Total: <strong>{totalRecipients}</strong> penerima</p>
-                }
-              </div>
-            </section>
-
-            {/* Validation Summary */}
-            {Object.keys(errors).length > 0 && (
-              <div className="validation-alert">
-                <p className="validation-alert__title">⚠ Harap lengkapi data berikut sebelum generate:</p>
-                <ul className="validation-alert__list">
-                  {Object.values(errors).map((msg, i) => (
-                    <li key={i} className="validation-alert__item">• {msg}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Action Bar */}
-            <div className="action-bar">
-              <button
-                className="btn btn--ghost"
-                onClick={() => {
-                  if (window.confirm('Reset semua data?')) {
-                    setTemplateFile(null);
-                    setExcelNames([]);
-                    setManualNames('');
-                    setFormData({
-                      Kota: '', Tanggal_Konfirmasi: '', Periode: '', Nama_Klien: '',
-                      Sebutan1: '', Auditor1: '', Sebutan2: '', Auditor2: '',
-                      Tanggal_Jatuh_Tempo: '', Nama_Direktur: '', Jabatan: ''
-                    });
-                    setErrors({});
-                    setActiveStep(1);
-                  }
-                }}
+              {/* Step 2: Detail Audit */}
+              <motion.section
+                className="section"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.2 }}
               >
-                Reset
-              </button>
-              <button
-                className="btn btn--primary btn--lg"
-                onClick={generateDocuments}
-                disabled={isProcessing}
+                <div className="section__header">
+                  <span className="section__number">2</span>
+                  <div>
+                    <h3 className="section__title">Detail Audit</h3>
+                    <p className="section__description">Lengkapi informasi yang akan muncul di semua surat</p>
+                  </div>
+                </div>
+
+                <div className="form-grid mt-3">
+                  <div className="form-group">
+                    <label className="form-label">Kota <span className="form-label__required">*</span></label>
+                    <input
+                      name="Kota"
+                      className={`form-input${errors.Kota ? ' form-input--error' : ''}`}
+                      placeholder="Samarinda"
+                      onChange={handleInputChange}
+                      value={formData.Kota}
+                    />
+                    {errors.Kota && <p className="form-error-msg">⚠ {errors.Kota}</p>}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Tanggal Surat <span className="form-label__required">*</span></label>
+                    <input
+                      name="Tanggal_Konfirmasi"
+                      type="date"
+                      className={`form-input${errors.Tanggal_Konfirmasi ? ' form-input--error' : ''}`}
+                      onChange={handleInputChange}
+                      value={formData.Tanggal_Konfirmasi}
+                    />
+                    {errors.Tanggal_Konfirmasi && <p className="form-error-msg">⚠ {errors.Tanggal_Konfirmasi}</p>}
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Periode Audit</label>
+                    <input
+                      name="Periode"
+                      className="form-input"
+                      placeholder="31 Desember 2023"
+                      onChange={handleInputChange}
+                      value={formData.Periode}
+                    />
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Nama Klien <span className="form-label__required">*</span></label>
+                    <input
+                      name="Nama_Klien"
+                      className={`form-input${errors.Nama_Klien ? ' form-input--error' : ''}`}
+                      placeholder="PT Contoh Abadi"
+                      onChange={handleInputChange}
+                      value={formData.Nama_Klien}
+                    />
+                    {errors.Nama_Klien && <p className="form-error-msg">⚠ {errors.Nama_Klien}</p>}
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-row__item form-row__item--small">
+                      <label className="form-label">Sebutan</label>
+                      <input
+                        name="Sebutan1"
+                        className="form-input"
+                        placeholder="Bpk"
+                        onChange={handleInputChange}
+                        value={formData.Sebutan1}
+                      />
+                    </div>
+                    <div className="form-row__item form-row__item--large">
+                      <label className="form-label">Auditor 1</label>
+                      <input
+                        name="Auditor1"
+                        className="form-input"
+                        placeholder="Nama lengkap"
+                        onChange={handleInputChange}
+                        value={formData.Auditor1}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-row__item form-row__item--small">
+                      <label className="form-label">Sebutan</label>
+                      <input
+                        name="Sebutan2"
+                        className="form-input"
+                        placeholder="Ibu"
+                        onChange={handleInputChange}
+                        value={formData.Sebutan2}
+                      />
+                    </div>
+                    <div className="form-row__item form-row__item--large">
+                      <label className="form-label">Auditor 2</label>
+                      <input
+                        name="Auditor2"
+                        className="form-input"
+                        placeholder="Nama lengkap"
+                        onChange={handleInputChange}
+                        value={formData.Auditor2}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Batas Waktu Respon</label>
+                    <input
+                      name="Tanggal_Jatuh_Tempo"
+                      type="date"
+                      className="form-input"
+                      onChange={handleInputChange}
+                      value={formData.Tanggal_Jatuh_Tempo}
+                    />
+                  </div>
+
+                  <div className="form-row">
+                    <div className="form-row__item">
+                      <label className="form-label">Nama Direktur <span className="form-label__required">*</span></label>
+                      <input
+                        name="Nama_Direktur"
+                        className={`form-input${errors.Nama_Direktur ? ' form-input--error' : ''}`}
+                        placeholder="Nama penanda tangan"
+                        onChange={handleInputChange}
+                        value={formData.Nama_Direktur}
+                      />
+                      {errors.Nama_Direktur && <p className="form-error-msg">⚠ {errors.Nama_Direktur}</p>}
+                    </div>
+                    <div className="form-row__item" style={{ maxWidth: '180px' }}>
+                      <label className="form-label">Jabatan</label>
+                      <input
+                        name="Jabatan"
+                        className="form-input"
+                        placeholder="Direktur"
+                        onChange={handleInputChange}
+                        value={formData.Jabatan}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </motion.section>
+
+              {/* Step 3: Daftar Penerima */}
+              <motion.section
+                className="section"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.4, delay: 0.3 }}
               >
-                {isProcessing ? (
-                  <>
-                    <span className="btn__spinner"></span>
-                    Memproses...
-                  </>
-                ) : (
-                  <>
-                    <Icons.Sparkles />
-                    Generate {totalRecipients || 1} Dokumen
-                  </>
-                )}
-              </button>
-            </div>
-          </>
-        ) : (
-          /* Result Card */
-          <section className="section">
-            <div className="result-card">
-              <div className="result-card__icon"><Icons.Check /></div>
-              <span className="result-card__badge"><Icons.Sparkles /> Selesai</span>
-              <h4 className="result-card__title">Dokumen Berhasil Dibuat</h4>
-              <p className="result-card__message">
-                {downloadData.isZip
-                  ? `${totalRecipients} file dikemas dalam format ZIP`
-                  : 'File siap diunduh'
-                }
-              </p>
+                <div className="section__header">
+                  <span className="section__number">3</span>
+                  <div>
+                    <h3 className="section__title">Daftar Penerima</h3>
+                    <p className="section__description">Tambahkan nama penerima konfirmasi (minimal 1)</p>
+                  </div>
+                </div>
 
-              <div className="result-card__actions">
-                <button
-                  className="btn btn--success btn--lg"
-                  onClick={() => saveAs(downloadData.blob, downloadData.fileName)}
-                >
-                  <Icons.Download />
-                  Unduh {downloadData.isZip ? 'ZIP' : 'File'}
-                </button>
+                <div className="mt-3">
+                  <label className="form-label mb-2">Import dari Excel</label>
+                  <div className="file-upload">
+                    <motion.label
+                      className="file-upload__area"
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.99 }}
+                    >
+                      <input
+                        type="file"
+                        accept=".xlsx, .xls"
+                        className="file-upload__input"
+                        onChange={handleExcelUpload}
+                      />
+                      <div className="file-upload__icon">👥</div>
+                      <p className="file-upload__text">
+                        <strong>Upload Excel</strong> dengan kolom &ldquo;Nama&rdquo;
+                      </p>
+                      <p className="file-upload__hint">Format: .xlsx atau .xls</p>
+                    </motion.label>
+                    <div ref={bankListRef}>
+                      {excelNames.length > 0 && (
+                        <div className="file-upload__preview">
+                          <Icons.Check /> {excelNames.length} bank terdeteksi
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
 
+                <div className="or-separator">ATAU</div>
+
+                <div>
+                  <label className="form-label mb-2">Input Manual</label>
+                  <textarea
+                    className={`form-textarea${errors.penerima && excelNames.length === 0 ? ' form-textarea--error' : ''}`}
+                    placeholder={"PT Maju Bersama\nCV Sejahtera Abadi\nToko Berkah Jaya"}
+                    value={manualNames}
+                    onChange={(e) => {
+                      setManualNames(e.target.value);
+                      setActiveStep(3);
+                      if (errors.penerima) setErrors((prev) => { const n = { ...prev }; delete n.penerima; return n; });
+                    }}
+                  />
+                  {errors.penerima && <p className="form-error-msg">⚠ {errors.penerima}</p>}
+                  <div style={{ textAlign: 'right', marginTop: '8px' }}>
+                    <span className={`bank-count-badge ${totalRecipients > 0 ? 'bank-count-badge--active' : 'bank-count-badge--zero'}`}>
+                      {totalRecipients > 0 ? '✓' : '○'} Total: {totalRecipients} bank
+                    </span>
+                  </div>
+                </div>
+              </motion.section>
+
+              {/* Validation Summary */}
+              {Object.keys(errors).length > 0 && (
+                <div className="validation-alert">
+                  <p className="validation-alert__title">⚠ Harap lengkapi data berikut sebelum generate:</p>
+                  <ul className="validation-alert__list">
+                    {Object.values(errors).map((msg, i) => (
+                      <li key={i} className="validation-alert__item">• {msg}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {/* Action Bar */}
+              <div className="action-bar">
                 <button
-                  className="btn btn--outline"
+                  className="btn btn--ghost"
                   onClick={() => {
-                    alert("💡 Tips:\n\n• Buka file di Microsoft Word\n• Gunakan 'Save As' → PDF untuk konversi\n• Format tabel akan tetap rapi");
+                    if (window.confirm('Reset semua data?')) {
+                      setTemplateFile(null);
+                      setExcelNames([]);
+                      setManualNames('');
+                      setFormData({
+                        Kota: '', Tanggal_Konfirmasi: '', Periode: '', Nama_Klien: '',
+                        Sebutan1: '', Auditor1: '', Sebutan2: '', Auditor2: '',
+                        Tanggal_Jatuh_Tempo: '', Nama_Direktur: '', Jabatan: ''
+                      });
+                      setErrors({});
+                      setActiveStep(1);
+                    }
                   }}
                 >
-                  <Icons.Info /> Panduan
+                  Reset
                 </button>
+                <motion.button
+                  className="btn btn--primary btn--lg"
+                  onClick={generateDocuments}
+                  disabled={isProcessing || !templateFile}
+                  whileHover={{ scale: 1.03 }}
+                  whileTap={{ scale: 0.97 }}
+                >
+                  {isProcessing ? (
+                    <>
+                      <span className="btn__spinner"></span>
+                      Memproses...
+                    </>
+                  ) : (
+                    <>
+                      <Icons.Sparkles />
+                      Generate {totalRecipients || 1} Dokumen
+                    </>
+                  )}
+                </motion.button>
               </div>
-            </div>
 
-            <div className="action-bar">
-              <button
-                className="btn btn--ghost"
-                onClick={() => {
-                  setHasGenerated(false);
-                  setActiveStep(3);
-                }}
+            </motion.div>
+          ) : (
+            <motion.div key="result">
+              <motion.section
+                className="section"
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
               >
-                <Icons.ArrowLeft /> Edit
-              </button>
-              <button
-                className="btn btn--outline"
-                onClick={() => {
-                  setHasGenerated(false);
-                  setActiveStep(1);
-                  setTemplateFile(null);
-                  setExcelNames([]);
-                  setManualNames('');
-                }}
-              >
-                <Icons.Sparkles /> Buat Baru
-              </button>
-            </div>
-          </section>
-        )}
-      </main>
+                <div className="result-card">
+                  <motion.div
+                    className="result-card__icon"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+                  >
+                    <Icons.Check />
+                  </motion.div>
+                  <h4 className="result-card__title">Berhasil! 🎉</h4>
+                  <p className="result-card__message">{totalRecipients} Surat Konfirmasi Bank siap diunduh.</p>
+                  <p className="result-card__filename">{downloadData.fileName}</p>
+                  <motion.button
+                    className="btn btn--success btn--lg"
+                    onClick={() => saveAs(downloadData.blob, downloadData.fileName)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Icons.Download /> Unduh {downloadData.isZip ? 'ZIP' : 'Dokumen'}
+                  </motion.button>
+                </div>
+                <div className="action-bar mt-4">
+                  <button
+                    className="btn btn--ghost"
+                    onClick={() => { setHasGenerated(false); setShowConfetti(false); }}
+                  >
+                    <Icons.ArrowLeft /> Buat lagi
+                  </button>
+                </div>
+              </motion.section>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.main>
 
       {/* Footer */}
       <footer className="text-center text-muted" style={{ fontSize: '0.8125rem' }}>
-        <p>Generator Konfirmasi Utang</p>
+        <p>Generator Konfirmasi Bank • KAP Kuncara Budi Santosa &amp; Rekan</p>
       </footer>
     </div>
   );
