@@ -11,6 +11,14 @@ import { useWindowSize } from 'react-use';
 import logoTransparan from './assets/logo_transparan.png';
 import './App.css';
 
+const formatTanggalIndonesia = (dateStr) => {
+  if (!dateStr) return '';
+  const bulan = ['Januari','Februari','Maret','April','Mei','Juni',
+                 'Juli','Agustus','September','Oktober','November','Desember'];
+  const [year, month, day] = dateStr.split('-');
+  return `${parseInt(day)} ${bulan[parseInt(month) - 1]} ${year}`;
+};
+
 // Simple Icon Components
 const Icons = {
   Document: () => <span>📄</span>,
@@ -103,6 +111,8 @@ function App() {
               paragraphLoop: true, linebreaks: true, delimiters: { start: '{{', end: '}}' }
             });
             const docData = { ...formData, Nama_Penerima: penerima };
+            docData.Tanggal_Konfirmasi = formatTanggalIndonesia(docData.Tanggal_Konfirmasi);
+            docData.Tanggal_Jatuh_Tempo = formatTanggalIndonesia(docData.Tanggal_Jatuh_Tempo);
             Object.keys(docData).forEach(key => {
                if(!docData[key]) docData[key] = `{{${key}}}`;
                if((key === 'Sebutan1' || key === 'Sebutan2') && docData[key] === `{{${key}}}`) docData[key] = "";
